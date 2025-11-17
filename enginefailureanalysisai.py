@@ -23,3 +23,46 @@ print(df.columns)
 df.info()
 
 print(df['Fault_Condition'].value_counts())
+
+import numpy as np
+
+df['Vibrations'] = np.sqrt(df['Vibration_X']**2 + df['Vibration_Y']**2 + df['Vibration_Z']**2)
+
+df = df.drop(columns=['Vibration_X', 'Vibration_Y','Vibration_Z'])
+
+df.head()
+
+#Visualizing Data
+import seaborn as sns
+
+features = ['Temperature (°C)', 'RPM', 'Torque', 'Vibrations']
+target = 'Fault_Condition'
+
+plt.figure(figsize=(15, 10))
+
+for i, feature in enumerate(features):
+    plt.subplot(2, 2, i + 1)
+    sns.boxplot(x=target, y=feature, data=df)
+    plt.title(f'{feature} Distribution by Fault Condition')
+
+plt.tight_layout()
+plt.show()
+
+#Scaling Values
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+scaling_features = ['RPM', 'Temperature (°C)', 'Fuel_Efficiency', 'Torque', 'Power_Output (kW)', 'Vibrations']
+df[scaling_features] = scaler.fit_transform(df[scaling_features])
+print(df.head())
+
+from sklearn.model_selection import train_test_split
+
+X = df.drop('Fault_Condition', axis=1)
+Y = df['Fault_Condition']
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
+
+print(f"\nTraining features (X_train) shape: {X_train.shape}")
+print(f"Testing features (X_test) shape: {X_test.shape}")
+
