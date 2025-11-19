@@ -60,7 +60,7 @@ The dataset consists of 10,000 data points collected from a simulated milling ma
 ### 🔧 How to Run
 1.  Clone the repository:
     ```bash
-    git clone [https://github.com/SaiPatil509/EngineFailureAnalysisAI.git]
+    git clone https://github.com/SaiPatil059/EngineFailureAnalysisAI.git
     ```
 2.  Install dependencies:
     ```bash
