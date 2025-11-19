@@ -62,3 +62,55 @@ I'm excited to have successfully completed the first phase of this project, focu
 Next, I'm looking forward to extending this project to predict the *type* of failure, which will add even more valuable insights.
 """
 
+#EXTENSION: FAILURE TYPE DIAGNOSTICS
+
+#Preparing and splitting dataset for diagnostics
+
+df = pd.read_csv('ai4i2020.csv')
+
+def get_failure_type(row):
+    if row['TWF'] == 1: return 'Tool Wear Failure'
+    if row['HDF'] == 1: return 'Heat Dissipation Failure'
+    if row['PWF'] == 1: return 'Power Failure'
+    if row['OSF'] == 1: return 'Overstrain Failure'
+    if row['RNF'] == 1: return 'Random Failure'
+    return 'No Failure'
+
+df['Failure_Type'] = df.apply(get_failure_type, axis=1)
+
+X_diag = df.drop(columns=['UDI', 'Product ID', 'Type', 'Machine failure', 'Failure_Type',
+                          'TWF', 'HDF', 'PWF', 'OSF', 'RNF'])
+Y_diag = df['Failure_Type']
+
+#Splitting Data
+X_train, X_test, Y_train, Y_test = train_test_split(X_diag, Y_diag, test_size=0.2, random_state=42, stratify=Y_diag)
+
+#Model Train (Multi-Class)
+model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+model.fit(X_train, Y_train)
+
+print('RandomForestClassifier Model training complete !')
+
+#Evaluate
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+
+
+y_pred = model.predict(X_test)
+print("--- Failure Diagnosis Results ---")
+print(f'Accuracy: {accuracy_score(Y_test, y_pred)}')
+print(classification_report(Y_test, y_pred))
+
+#Visualizing the results
+import seaborn as sns
+
+cm = confusion_matrix(Y_test, y_pred)
+
+plt.figure(figsize=(12, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=model.classes_,
+            yticklabels=model.classes_)
+plt.title('Failure Diagnosis Confusion Matrix')
+plt.ylabel('Actual Failure Type')
+plt.xlabel('Predicted Failure Type')
+plt.show()
+
