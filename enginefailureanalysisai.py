@@ -10,7 +10,7 @@ Original file is located at
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv('engine_failure_dataset.csv')
+data = pd.read_csv('ai4i2020.csv')
 df = pd.DataFrame(data)
 # df.info()
 df.head()
@@ -22,97 +22,43 @@ print(df.columns)
 
 df.info()
 
-print(df['Fault_Condition'].value_counts())
+#Distribution of data for various failures
 
-import numpy as np
+print(f'Tool Wear Failure : {df['TWF'].sum()}')
+print(f'Heat Dissipation Failure : {df['HDF'].sum()}')
+print(f'Power Failure : {df['PWF'].sum()}')
+print(f'Overstrain Failure : {df['OSF'].sum()}')
+print(f'Random Failures : {df['RNF'].sum()}')
 
-df['Vibrations'] = np.sqrt(df['Vibration_X']**2 + df['Vibration_Y']**2 + df['Vibration_Z']**2)
+"""We can see that the data is not balanced for all the failure cases. So for training and evaluation we need to implement a model that is able to give good and accurate predictions for such type of dataset."""
 
-df = df.drop(columns=['Vibration_X', 'Vibration_Y','Vibration_Z'])
+#Preparing the dataset for train test split
 
+df = df.drop(columns=['UDI', 'Product ID', 'Type', 'TWF', 'HDF', 'PWF', 'OSF', 'RNF'], axis =1)
 df.head()
 
-#Visualizing Data
-import seaborn as sns
-
-features = ['Temperature (°C)', 'RPM', 'Torque', 'Vibrations']
-target = 'Fault_Condition'
-
-plt.figure(figsize=(15, 10))
-
-for i, feature in enumerate(features):
-    plt.subplot(2, 2, i + 1)
-    sns.boxplot(x=target, y=feature, data=df)
-    plt.title(f'{feature} Distribution by Fault Condition')
-
-plt.tight_layout()
-plt.show()
-
-#Before scaling the values, we need to encode the Operational_Mode column
-
-df = pd.get_dummies(df, columns=['Operational_Mode'])
-
-#After this we get True and Flase, which we need to map to 0,1
-df['Operational_Mode_Cruising'] = df['Operational_Mode_Cruising'].map({True: 1, False: 0})
-df['Operational_Mode_Heavy Load'] = df['Operational_Mode_Heavy Load'].map({True: 1, False: 0})
-df['Operational_Mode_Idle'] = df['Operational_Mode_Idle'].map({True: 1, False: 0})
-
-print(df.head())
-
-#Scaling Values
-from sklearn.preprocessing import MinMaxScaler
-
-scaler = MinMaxScaler()
-scaling_features = ['RPM', 'Temperature (°C)', 'Fuel_Efficiency', 'Torque', 'Power_Output (kW)', 'Vibrations']
-df[scaling_features] = scaler.fit_transform(df[scaling_features])
-print(df.head())
-
+#Spliting data and Training model
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, f1_score, accuracy_score
 
-X = df.drop(['Fault_Condition', 'Time_Stamp'], axis=1)
-Y = df['Fault_Condition']
+X_train, X_test, Y_train, Y_test = train_test_split(df.drop('Machine failure', axis=1), df['Machine failure'], test_size=0.2, random_state=42)
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
 
-print(f"\nTraining features (X_train) shape: {X_train.shape}")
-print(f"Testing features (X_test) shape: {X_test.shape}")
+model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+model.fit(X_train, Y_train)
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+print("RandomForestClassifier Model training complete !")
 
-log_reg = LogisticRegression(max_iter=1000, random_state=42)
-log_reg.fit(X_train, Y_train)
-print("Logistic Regression Model Trained.")
+# Evaluate
+y_pred_rf = model.predict(X_test)
+print(f'Accuracy: {accuracy_score(Y_test, y_pred_rf)}')
+print(classification_report(Y_test, y_pred_rf))
 
-dt_clf = DecisionTreeClassifier(random_state=42)
-dt_clf.fit(X_train, Y_train)
-print("Decision Tree Model Trained.")
+"""### Project Part 1: Engine Failure Detection - Complete!
 
-#Evaluating the model
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import seaborn as sns
+I'm excited to have successfully completed the first phase of this project, focusing on detecting engine failure. The model has shown promising results in identifying machine failures.
 
-y_pred_log_reg = log_reg.predict(X_test)
-log_reg_accuracy = accuracy_score(Y_test, y_pred_log_reg)
-cm_lr = confusion_matrix(Y_test, y_pred_log_reg)
-print(f"Logistic Regression Accuracy: {log_reg_accuracy}")
-sns.heatmap(cm_lr, annot=True, fmt='d', cmap='Blues', cbar=False)
-
-y_pred_dt_clf = dt_clf.predict(X_test)
-dt_clf_accuracy = accuracy_score(Y_test, y_pred_dt_clf)
-cm_dt = confusion_matrix(Y_test, y_pred_dt_clf)
-print(f"Decision Tree Accuracy: {dt_clf_accuracy}")
-sns.heatmap(cm_dt, annot=True, fmt='d', cmap='Blues', cbar=False)
-
-"""###After Thought / Conclusion
-After the evaluation of the chosen models, we can see that the accuracy for both is very less. For better understanding, confusion matrix very clearly shows how all the predictions are.
-
-The LogisticRegression model with a accuracy of .255 was able to correctly identify 'Fault_Condition 2' about 22 times, which is the highest number of correct predictions. Whereas it was very bad with 'Fault_Condition 3', all the predictions for 'Fault_Condition 3' were wrong except 1.
-
-The DecisionTreeClassifier model with a accuracy of .245 was more of approximately balanced with all the correct and incorrect predictions. The model also faced the issue with 'Fault_Condition 3', getting it right only 8 times.
-The accuracies of these models can be increased further by Hyperparameter tuining, Cross-Validation and some other techniques that I might not know right now [T_T]
-
-Anyways, this project has been fun for me. I was able to learn many small things that need to be addressed while actually writing the code versus just watch other people code or just learning.
-
-Thankyou !
+Next, I'm looking forward to extending this project to predict the *type* of failure, which will add even more valuable insights.
 """
+
