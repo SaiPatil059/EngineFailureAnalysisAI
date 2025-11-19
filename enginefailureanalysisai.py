@@ -48,6 +48,17 @@ for i, feature in enumerate(features):
 plt.tight_layout()
 plt.show()
 
+#Before scaling the values, we need to encode the Operational_Mode column
+
+df = pd.get_dummies(df, columns=['Operational_Mode'])
+
+#After this we get True and Flase, which we need to map to 0,1
+df['Operational_Mode_Cruising'] = df['Operational_Mode_Cruising'].map({True: 1, False: 0})
+df['Operational_Mode_Heavy Load'] = df['Operational_Mode_Heavy Load'].map({True: 1, False: 0})
+df['Operational_Mode_Idle'] = df['Operational_Mode_Idle'].map({True: 1, False: 0})
+
+print(df.head())
+
 #Scaling Values
 from sklearn.preprocessing import MinMaxScaler
 
@@ -58,7 +69,7 @@ print(df.head())
 
 from sklearn.model_selection import train_test_split
 
-X = df.drop('Fault_Condition', axis=1)
+X = df.drop(['Fault_Condition', 'Time_Stamp'], axis=1)
 Y = df['Fault_Condition']
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
@@ -66,3 +77,42 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_
 print(f"\nTraining features (X_train) shape: {X_train.shape}")
 print(f"Testing features (X_test) shape: {X_test.shape}")
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+
+log_reg = LogisticRegression(max_iter=1000, random_state=42)
+log_reg.fit(X_train, Y_train)
+print("Logistic Regression Model Trained.")
+
+dt_clf = DecisionTreeClassifier(random_state=42)
+dt_clf.fit(X_train, Y_train)
+print("Decision Tree Model Trained.")
+
+#Evaluating the model
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import seaborn as sns
+
+y_pred_log_reg = log_reg.predict(X_test)
+log_reg_accuracy = accuracy_score(Y_test, y_pred_log_reg)
+cm_lr = confusion_matrix(Y_test, y_pred_log_reg)
+print(f"Logistic Regression Accuracy: {log_reg_accuracy}")
+sns.heatmap(cm_lr, annot=True, fmt='d', cmap='Blues', cbar=False)
+
+y_pred_dt_clf = dt_clf.predict(X_test)
+dt_clf_accuracy = accuracy_score(Y_test, y_pred_dt_clf)
+cm_dt = confusion_matrix(Y_test, y_pred_dt_clf)
+print(f"Decision Tree Accuracy: {dt_clf_accuracy}")
+sns.heatmap(cm_dt, annot=True, fmt='d', cmap='Blues', cbar=False)
+
+"""###After Thought / Conclusion
+After the evaluation of the chosen models, we can see that the accuracy for both is very less. For better understanding, confusion matrix very clearly shows how all the predictions are.
+
+The LogisticRegression model with a accuracy of .255 was able to correctly identify 'Fault_Condition 2' about 22 times, which is the highest number of correct predictions. Whereas it was very bad with 'Fault_Condition 3', all the predictions for 'Fault_Condition 3' were wrong except 1.
+
+The DecisionTreeClassifier model with a accuracy of .245 was more of approximately balanced with all the correct and incorrect predictions. The model also faced the issue with 'Fault_Condition 3', getting it right only 8 times.
+The accuracies of these models can be increased further by Hyperparameter tuining, Cross-Validation and some other techniques that I might not know right now [T_T]
+
+Anyways, this project has been fun for me. I was able to learn many small things that need to be addressed while actually writing the code versus just watch other people code or just learning.
+
+Thankyou !
+"""
