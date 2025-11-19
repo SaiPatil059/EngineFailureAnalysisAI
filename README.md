@@ -1,4 +1,4 @@
-<img width="1079" height="701" alt="image" src="https://github.com/user-attachments/assets/e00e7e68-d105-4779-a00a-b2854a020c35" /># AI-Driven Predictive Maintenance System 🛠️
+# AI-Driven Predictive Maintenance System 🛠️
 
 ### 🚀 Project Overview
 This project implements a machine learning solution for **Condition Monitoring** and **Predictive Maintenance**. By analyzing sensor data (Air Temperature, Process Temperature, Torque, RPM), the system detects potential machine failures and diagnoses the specific root cause of the defect (e.g., Power Failure vs. Heat Dissipation Failure).
