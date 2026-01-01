@@ -114,3 +114,67 @@ plt.ylabel('Actual Failure Type')
 plt.xlabel('Predicted Failure Type')
 plt.show()
 
+"""##Project Part 2 : Engine Failure reasoning
+In this part, I have tried to interpret the reasons for the failure of the engine.
+"""
+
+import shap
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+df2 = pd.read_csv('ai4i2020.csv')
+
+#Creating necessary features
+# Power [W] = Torque * Speed * (Conversion to Rad/s)
+df2['Power_W'] = df2['Torque [Nm]'] * df2['Rotational speed [rpm]'] * (2 * np.pi / 60)
+# Overstrain = Tool Wear * Torque
+df2['Overstrain'] = df2['Tool wear [min]'] * df2['Torque [Nm]']
+# Heat Failure Risk = Process Temp - Air Temp
+df2['Temp_Diff'] = df2['Process temperature [K]'] - df2['Air temperature [K]']
+
+features = ['Power_W', 'Overstrain', 'Temp_Diff', 'Tool wear [min]', 'Torque [Nm]']
+X = df2[features]
+y = df2['Machine failure']
+
+# Train model
+print(f"Training Model on {len(features)} features...")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+print("Model training complete !")
+
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_test, check_additivity=False)
+
+if isinstance(shap_values, list):
+    # Classification: List of [Class0, Class1]. We want Class 1.
+    vals_final = np.abs(shap_values[1]).mean(axis=0)
+else:
+    # Regression/Binary: Single Array
+    vals_final = np.abs(shap_values).mean(axis=0)
+
+names = X_test.columns.tolist()
+scores = vals_final.flatten()
+
+print(f"Found {len(names)} names and {len(scores)} scores.")
+print(f"Names: {names}")
+print(f"Scores: {scores}")
+
+if len(names) != len(scores):
+    min_len = min(len(names), len(scores))
+    scores = scores[::2]
+
+rankings = pd.DataFrame({
+    'Feature': names,
+    'Score': scores
+})
+rankings.sort_values(by='Score', ascending=False, inplace=True)
+
+print("\n--- FINAL RANKINGS ---")
+print(rankings)
+print("----------------------------")
+
